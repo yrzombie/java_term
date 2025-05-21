@@ -1,0 +1,23 @@
+main/
+├── java/
+│   └── com/
+│       └── labwork/
+│           └── planning/
+│               ├── PlanningApplication.java
+│               ├── config/
+│               ├── controller/
+│               ├── kafka/
+│               ├── model/
+│               ├── parser/
+│               ├── repository/
+│               └── service/
+│                   ├── NotificationService.java
+│                   ├── ProjectService.java
+│                   └── SchedulingService.java
+├── resources/
+│   ├── application.properties
+│   ├── nasos.txt
+│   ├── static/index.html
+│   └── templates/
+
+

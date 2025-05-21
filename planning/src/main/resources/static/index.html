@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Редактирование проектов</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 8px; }
+    th { background-color: #f0f0f0; }
+    input { margin: 2px; }
+    label { display: inline-block; margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <h1>Список проектов</h1>
+  <div id="project-list"></div>
+
+  <h2>Редактировать проект</h2>
+  <div>
+    <label>ID: <input type="text" id="project-id" readonly></label><br>
+    <label>Название: <input type="text" id="project-name"></label><br>
+
+    <h3>Задачи</h3>
+    <div id="tasks"></div>
+    <button onclick="addTask()">Добавить задачу</button><br><br>
+
+    <button onclick="saveProject()">Сохранить изменения</button>
+  </div>
+
+  <script>
+    async function loadProjects() {
+      const res = await fetch('/api/projects');
+      const projects = await res.json();
+      const list = document.getElementById('project-list');
+      list.innerHTML = `<table><tr><th>ID</th><th>Название</th><th>Действие</th></tr>` +
+        projects.map(p =>
+          `<tr><td>${p.id}</td><td>${p.name}</td><td><button onclick="editProject(${p.id})">Редактировать</button></td></tr>`
+        ).join('') + '</table>';
+    }
+
+    async function editProject(id) {
+      const res = await fetch(`/api/projects/${id}`);
+      const project = await res.json();
+      document.getElementById('project-id').value = project.id;
+      document.getElementById('project-name').value = project.name;
+
+      const tasksDiv = document.getElementById('tasks');
+      tasksDiv.innerHTML = '';
+      project.tasks.forEach(t =>
+        addTask(t.name, t.code, t.parentCode, t.duration, t.operationTime, t.setupTime, t.batchSize, t.type, t.workshop)
+      );
+    }
+
+    function addTask(name = '', code = '', parentCode = '', duration = '', operationTime = '', setupTime = '', batchSize = '', type = '', workshop = '') {
+      const clean = val => val == null ? '' : val;
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <label>Название: <input type="text" class="task-name" value="${clean(name)}"></label>
+        <label>Код: <input type="text" class="task-code" value="${clean(code)}"></label>
+        <label>Код родителя: <input type="text" class="task-parent-code" value="${clean(parentCode)}"></label>
+        <label>Длительность: <input type="number" class="task-duration" value="${clean(duration)}"></label>
+        <label>Время операции: <input type="number" class="task-op-time" value="${clean(operationTime)}"></label>
+        <label>Подготовка: <input type="number" class="task-setup-time" value="${clean(setupTime)}"></label>
+        <label>Партия: <input type="number" class="task-batch-size" value="${clean(batchSize)}"></label>
+        <label>Тип: <input type="text" class="task-type" value="${clean(type)}"></label>
+        <label>Цех: <input type="text" class="task-workshop" value="${clean(workshop)}"></label>
+        <button onclick="this.parentElement.remove()">Удалить</button>
+        <br><br>
+      `;
+      document.getElementById('tasks').appendChild(div);
+    }
+
+    async function saveProject() {
+      const id = document.getElementById('project-id').value;
+      const name = document.getElementById('project-name').value;
+      const taskEls = document.querySelectorAll('#tasks > div');
+
+      const tasks = Array.from(taskEls).map(div => ({
+        name: div.querySelector('.task-name').value,
+        code: div.querySelector('.task-code').value,
+        parentCode: div.querySelector('.task-parent-code').value,
+        duration: parseFloat(div.querySelector('.task-duration').value) || 0,
+        operationTime: parseFloat(div.querySelector('.task-op-time').value) || 0,
+        setupTime: parseFloat(div.querySelector('.task-setup-time').value) || 0,
+        batchSize: parseInt(div.querySelector('.task-batch-size').value) || 0,
+        type: div.querySelector('.task-type').value,
+        workshop: div.querySelector('.task-workshop').value
+      }));
+
+      await fetch(`/api/projects/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, tasks })
+      });
+
+      alert('Проект обновлён');
+      loadProjects();
+    }
+
+    loadProjects();
+  </script>
+</body>
+</html>
